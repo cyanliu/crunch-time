@@ -1,77 +1,94 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import * as d3 from "d3";
 
-// 1. Define the shape of your data
+const MARGIN = { top: 30, right: 30, bottom: 50, left: 50 };
+
 export interface DataItem {
-  label: string;
+  date: Date;
   value: number;
 }
 
-// 2. Define the component's expected Props
 interface LineChartProps {
-  data: DataItem[];
+  dataset: DataItem[];
   width?: number;
   height?: number;
 }
 
 export const LineChart: React.FC<LineChartProps> = ({
-  data,
+  dataset: dataset,
   width = 500,
   height = 300,
 }) => {
-  // 3. Strongly type your DOM reference
-  const svgRef = useRef<SVGSVGElement | null>(null);
+  // bounds = area inside the graph axis = calculated by substracting the margins
+  const axesRef = useRef(null);
+  const boundsWidth = width - MARGIN.right - MARGIN.left;
+  const boundsHeight = height - MARGIN.top - MARGIN.bottom;
 
-  useEffect(() => {
-    if (!svgRef.current || data.length === 0) return;
-
-    // 1. Clear any previous elements to avoid duplication on re-renders
-    const svg = d3.select(svgRef.current);
-    svg.selectAll("*").remove();
-
-    // 2. Setup scales using D3 utilities
-    const xScale = d3
-      .scaleBand()
-      .domain(data.map((d) => d.label))
-      .range([0, width])
-      .padding(0.3);
-
-    const yScale = d3
+  // Y axis
+  const [min, max] = d3.extent(dataset, (d) => d.value);
+  const yScale = useMemo(() => {
+    return d3
       .scaleLinear()
-      .domain([0, d3.max(data, (d) => d.value) || 0])
-      .range([height, 0]); // Inverted coordinates for SVG space
+      .domain([0, max || 0])
+      .range([boundsHeight, 0]);
+  }, [dataset, height]);
 
-    // 3. Render the X and Y Axis
-    const xAxis = d3.axisBottom(xScale);
-    const yAxis = d3.axisLeft(yScale);
+  // X axis
+  const [xMin, xMax] = d3.extent(dataset, (d) => d.date);
+  const xScale = useMemo(() => {
+    return d3
+      .scaleLinear()
+      .domain([0, xMax || 0])
+      .range([0, boundsWidth]);
+  }, [dataset, width]);
 
-    svg.append("g").attr("transform", `translate(0, ${height})`).call(xAxis);
+  // Render the X and Y axis using d3.js, not react
+  useEffect(() => {
+    const svgElement = d3.select(axesRef.current);
+    svgElement.selectAll("*").remove();
+    const xAxisGenerator = d3.axisBottom(xScale);
+    svgElement
+      .append("g")
+      .attr("transform", "translate(0," + boundsHeight + ")")
+      .call(xAxisGenerator);
 
-    svg.append("g").call(yAxis);
+    const yAxisGenerator = d3.axisLeft(yScale);
+    svgElement.append("g").call(yAxisGenerator);
+  }, [xScale, yScale, boundsHeight]);
 
-    // 4. Bind the data and draw the bars
-    svg
-      .selectAll(".bar")
-      .data(data)
-      .enter()
-      .append("rect")
-      .attr("class", "bar")
-      .attr("x", (d) => xScale(d.label) || 0)
-      .attr("y", (d) => yScale(d.value))
-      .attr("width", xScale.bandwidth())
-      .attr("height", (d) => height - yScale(d.value))
-      .attr("fill", "#0070aa");
-  }, [data, width, height]); // Re-run effect whenever these dependencies change
+  // Build the line
+  const lineBuilder = d3
+    .line<DataItem>()
+    .x((d) => xScale(d.date))
+    .y((d) => yScale(d.value));
+  const linePath = lineBuilder(dataset);
+  if (!linePath) {
+    return null;
+  }
 
-  // Drawing logic will live here...
-
-  // 4. Return an empty SVG wrapper for D3 to inject into
   return (
-    <svg
-      ref={svgRef}
-      width={width}
-      height={height}
-      style={{ overflow: "visible", margin: "50px" }}
-    />
+    <div>
+      <svg width={width} height={height}>
+        <g
+          width={boundsWidth}
+          height={boundsHeight}
+          transform={`translate(${[MARGIN.left, MARGIN.top].join(",")})`}
+        >
+          <path
+            d={linePath}
+            opacity={1}
+            stroke="#9a6fb0"
+            fill="none"
+            strokeWidth={2}
+          />
+        </g>
+        <g
+          width={boundsWidth}
+          height={boundsHeight}
+          ref={axesRef}
+          transform={`translate(${[MARGIN.left, MARGIN.top].join(",")})`}
+        />
+      </svg>
+    </div>
   );
 };
