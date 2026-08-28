@@ -8,13 +8,13 @@ export interface DataItem {
 }
 
 // 2. Define the component's expected Props
-interface BarChartProps {
+interface LineChartProps {
   data: DataItem[];
   width?: number;
   height?: number;
 }
 
-export const BarChart: React.FC<BarChartProps> = ({
+export const LineChart: React.FC<LineChartProps> = ({
   data,
   width = 500,
   height = 300,
@@ -60,7 +60,7 @@ export const BarChart: React.FC<BarChartProps> = ({
       .attr("y", (d) => yScale(d.value))
       .attr("width", xScale.bandwidth())
       .attr("height", (d) => height - yScale(d.value))
-      .attr("fill", "#4f46e5"); // Tailwinds Indigo color
+      .attr("fill", "#0070aa");
   }, [data, width, height]); // Re-run effect whenever these dependencies change
 
   // Drawing logic will live here...

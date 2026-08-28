@@ -1,4 +1,4 @@
-import { BarChart, type DataItem } from "./Barchart.tsx";
+import { LineChart, type DataItem } from "./Linechart.tsx";
 
 const chartData: DataItem[] = [
   { label: "Apples", value: 45 },
@@ -9,8 +9,8 @@ const chartData: DataItem[] = [
 export default function App() {
   return (
     <div style={{ padding: "2rem" }}>
-      <h2>Fruit Inventory</h2>
-      <BarChart data={chartData} width={600} height={400} />
+      <h1>crunch o'meter</h1>
+      <LineChart data={chartData} width={600} height={400} />
     </div>
   );
 }
