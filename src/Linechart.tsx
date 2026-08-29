@@ -37,8 +37,8 @@ export const LineChart: React.FC<LineChartProps> = ({
   const [xMin, xMax] = d3.extent(dataset, (d) => d.date);
   const xScale = useMemo(() => {
     return d3
-      .scaleLinear()
-      .domain([0, xMax || 0])
+      .scaleTime()
+      .domain([xMin || 0, xMax || 0])
       .range([0, boundsWidth]);
   }, [dataset, width]);
 
@@ -46,7 +46,9 @@ export const LineChart: React.FC<LineChartProps> = ({
   useEffect(() => {
     const svgElement = d3.select(axesRef.current);
     svgElement.selectAll("*").remove();
-    const xAxisGenerator = d3.axisBottom(xScale);
+    const xAxisGenerator = d3
+      .axisBottom<Date>(xScale)
+      .tickFormat(d3.timeFormat("%b %Y"));
     svgElement
       .append("g")
       .attr("transform", "translate(0," + boundsHeight + ")")
